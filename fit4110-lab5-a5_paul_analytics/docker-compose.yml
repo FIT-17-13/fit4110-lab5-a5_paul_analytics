@@ -1,0 +1,72 @@
+services:
+  api:
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: ${API_IMAGE:-a5-analytics-api:v0.5.0-team-analytics}
+  container_name: fit4110-a5-analytics-api
+
+  environment:
+    WORKER_URL: http://analytics-worker:9000
+    DATABASE_URL: postgresql://lab05:lab05pass@db:5432/analyticsdb
+
+  networks:
+    - team-internal
+    - class-net
+
+  ports:
+    - "8000:8000"
+
+  depends_on:
+    db:
+      condition: service_healthy
+    analytics-worker:
+      condition: service_healthy
+
+  restart: unless-stopped
+
+  analytics-worker:
+    build:
+    context: .
+    dockerfile: Dockerfile.worker
+    image: ${WORKER_IMAGE:-a5-analytics-worker:v0.5.0-team-analytics}
+    container_name: fit4110-a5-analytics-worker
+
+    environment:
+    SERVICE_VERSION: ${SERVICE_VERSION:-0.5.0-team-analytics}
+
+    networks:
+      - class-net
+
+    expose:
+      - "9000"
+
+    restart: unless-stopped
+  db:
+    image: postgres:15-alpine
+    container_name: fit4110-a5-analytics-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lab05}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lab05pass}
+      POSTGRES_DB: ${POSTGRES_DB:-analyticsdb}
+    volumes:
+      - analytics-db-data:/var/lib/postgresql/data
+    networks: [ team-internal ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lab05} -d ${POSTGRES_DB:-analyticsdb}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+networks:
+  team-internal:
+    driver: bridge
+    internal: true
+
+  class-net:
+    name: class-net
+    driver: bridge
+
+volumes:
+  analytics-db-data:

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="A5 Analytics Lab 05 Compose" tests="5" time="0.289">
+  <testsuite name="Health" id="4c7efd91-ad8a-4de6-9076-fa3f7ad87644" timestamp="2026-06-17T08:24:40.075Z" tests="2" failures="0" errors="0" time="0.118">
+    <testcase name="Health returns 200" time="0.118" classname="Health"/>
+    <testcase name="Dependencies ready" time="0.118" classname="Health"/>
+  </testsuite>
+  <testsuite name="Unauthorized event" id="aca2339b-63f2-48ca-bc73-58dd666bcbdf" timestamp="2026-06-17T08:24:40.075Z" tests="1" failures="0" errors="0" time="0.012">
+    <testcase name="Unauthorized returns 401" time="0.012" classname="UnauthorizedEvent"/>
+  </testsuite>
+  <testsuite name="Create policy event" id="7a3794f9-ea29-43e9-99c7-fd27286357b0" timestamp="2026-06-17T08:24:40.075Z" tests="2" failures="0" errors="0" time="0.087">
+    <testcase name="Event accepted" time="0.087" classname="CreatePolicyEvent"/>
+    <testcase name="Worker analyzed risk" time="0.087" classname="CreatePolicyEvent"/>
+  </testsuite>
+  <testsuite name="Recent events" id="25cb0f01-e4d6-48c7-b984-59ed80d745bf" timestamp="2026-06-17T08:24:40.075Z" tests="2" failures="0" errors="0" time="0.030">
+    <testcase name="Recent events returns 200" time="0.030" classname="RecentEvents"/>
+    <testcase name="Response is array" time="0.030" classname="RecentEvents"/>
+  </testsuite>
+  <testsuite name="Analytics summary" id="6f879112-b083-4748-86a1-24ca6ac86259" timestamp="2026-06-17T08:24:40.075Z" tests="2" failures="0" errors="0" time="0.042">
+    <testcase name="Summary returns 200" time="0.042" classname="AnalyticsSummary"/>
+    <testcase name="Summary has events" time="0.042" classname="AnalyticsSummary"/>
+  </testsuite>
+</testsuites>

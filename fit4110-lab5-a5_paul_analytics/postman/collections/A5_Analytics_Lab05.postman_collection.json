@@ -1,0 +1,189 @@
+{
+  "info": {
+    "name": "A5 Analytics Lab 05 Compose",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "eventId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Health returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Dependencies ready', () => { const j=pm.response.json(); pm.expect(j.status).to.eql('ok'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unauthorized event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/events/core",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "core"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Unauthorized returns 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create policy event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"policy.decision.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"corr-lab05-001\",\n  \"source\": \"core-business\",\n  \"data\": {\"decision\": \"DENIED\", \"policyId\": \"POL-001\"}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/events/core",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "core"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Event accepted', () => pm.response.to.have.status(202));",
+              "pm.test('Worker analyzed risk', () => { const j=pm.response.json(); pm.expect(j.accepted).to.eql(true); pm.expect(j.category).to.eql('high-risk'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recent events",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/events/recent?limit=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "events",
+            "recent"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Recent events returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/analytics/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "analytics",
+            "summary"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Summary returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Summary has events', () => pm.expect(pm.response.json().total_events).to.be.at.least(1));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

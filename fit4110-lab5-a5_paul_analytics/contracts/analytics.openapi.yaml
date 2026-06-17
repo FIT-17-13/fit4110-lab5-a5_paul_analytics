@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: A5 Analytics API - FIT4110 Lab 05
+  version: 0.5.0-team-analytics
+  description: API nhận sự kiện từ Core Business, lưu PostgreSQL và tổng hợp analytics.
+servers:
+  - url: http://localhost:8000
+security:
+  - bearerAuth: []
+tags:
+  - name: system
+  - name: events
+  - name: analytics
+paths:
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Trạng thái API, database và worker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /events/core:
+    post:
+      tags: [events]
+      operationId: receiveCoreEvent
+      summary: Nhận event từ Core Business
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoreEvent'
+      responses:
+        '202':
+          description: Event được chấp nhận
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Event trùng eventId
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Payload không hợp lệ
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '503':
+          description: Database hoặc worker chưa sẵn sàng
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /events/recent:
+    get:
+      tags: [events]
+      operationId: getRecentEvents
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Danh sách event mới nhất
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /analytics/summary:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsSummary
+      responses:
+        '200':
+          description: Thống kê tổng hợp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: Thiếu hoặc sai token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version, database, worker]
+      properties:
+        status: {type: string, enum: [ok, degraded]}
+        service: {type: string}
+        version: {type: string}
+        database: {type: string}
+        worker: {type: string}
+    CoreEventData:
+      type: object
+      additionalProperties: true
+      properties:
+        decision: {type: [string, 'null']}
+        severity: {type: [string, 'null']}
+        policyId: {type: [string, 'null']}
+        alertId: {type: [string, 'null']}
+        value: {type: [number, 'null']}
+        metadata: {type: object, additionalProperties: true}
+    CoreEvent:
+      type: object
+      required: [eventId, eventType, eventVersion, occurredAt, correlationId, source, data]
+      properties:
+        eventId: {type: string, format: uuid}
+        eventType:
+          type: string
+          enum: [policy.decision.created, alert.created, alert.resolved]
+        eventVersion: {type: string, example: 1.0.0}
+        occurredAt: {type: string, format: date-time}
+        correlationId: {type: string, minLength: 1}
+        source: {type: string, minLength: 1, example: core-business}
+        data: {$ref: '#/components/schemas/CoreEventData'}
+    EventAccepted:
+      type: object
+      required: [event_id, accepted, category, risk_score, received_at]
+      properties:
+        event_id: {type: string, format: uuid}
+        accepted: {type: boolean}
+        category: {type: string}
+        risk_score: {type: number, minimum: 0, maximum: 1}
+        received_at: {type: string, format: date-time}
+    EventItem:
+      type: object
+      required: [event_id, event_type, event_version, occurred_at, correlation_id, source, data, risk_score, category, received_at]
+      properties:
+        event_id: {type: string, format: uuid}
+        event_type: {type: string}
+        event_version: {type: string}
+        occurred_at: {type: string, format: date-time}
+        correlation_id: {type: string}
+        source: {type: string}
+        data: {type: object, additionalProperties: true}
+        risk_score: {type: number}
+        category: {type: string}
+        received_at: {type: string, format: date-time}
+    SummaryResponse:
+      type: object
+      required: [total_events, by_type, by_category, average_risk_score]
+      properties:
+        total_events: {type: integer}
+        by_type: {type: object, additionalProperties: {type: integer}}
+        by_category: {type: object, additionalProperties: {type: integer}}
+        average_risk_score: {type: number}
+    ProblemDetails:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer, minimum: 400, maximum: 599}
+        detail: {type: string}
+        instance: {type: [string, 'null']}

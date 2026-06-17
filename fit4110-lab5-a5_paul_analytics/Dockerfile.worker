@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1.7
+FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/opt/venv/bin:$PATH"
+WORKDIR /service
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir fastapi==0.115.6 uvicorn[standard]==0.34.0 pydantic==2.10.4 \
+    && addgroup --system worker \
+    && adduser --system --ingroup worker --home /service workeruser
+COPY src/analytics_worker/ ./
+RUN chown -R workeruser:worker /service
+USER workeruser
+EXPOSE 9000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health', timeout=3).read()" || exit 1
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
